@@ -1,0 +1,21 @@
+- name: Copy Certificate chain and key
+  become: yes
+  copy:
+    src: "{{certbot_base}}/config/live/{{inventory_hostname}}/{{item}}"
+    dest: "/usr/share/hassio/ssl/{{item}}"
+    mode: 0700
+    owner: root
+    group: root
+  with_items:
+    - fullchain.pem
+    - privkey.pem
+  register: certs
+
+# There's a docker_container module for ansible, which for some glorious
+# reason can't be used to simply restart a container. Module's clearly
+# not designed with this case in mind.
+#
+# https://github.com/ansible/ansible/issues/27960
+- name: Restart homeassistant container
+  command: docker restart homeassistant
+  when: certs.changed

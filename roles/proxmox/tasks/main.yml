@@ -1,0 +1,35 @@
+# Proxmox is peculiar about how you feed it config. /etc/pve is a FUSE mount, which
+# won't get overly happy with Ansible's normal method of uploading a file and then
+# replacing it in situ. We do the same thing, just outside of that particular
+# destination.
+- name: Ensure holding directory for certs
+  file:
+    path: pve-ssl/
+    state: directory
+
+- name: Copy Certificate chain and key
+  copy:
+    src: "{{certbot_base}}/config/live/{{inventory_hostname}}/{{item.file}}"
+    dest: "pve-ssl/{{item.dest}}"
+    mode: 0700
+  with_items:
+    - { file: "fullchain.pem", dest: "pveproxy-ssl.pem" }
+    - { file: "privkey.pem", dest: "pveproxy-ssl.key" }
+  register: certs
+
+- name: Copy pve SSL cert and key
+  become: yes
+  command: "cp pve-ssl/{{item}} /etc/pve/nodes/{{nodename}}/{{item}}"
+  args:
+    creates: "/etc/pve/nodes/{{nodename}}/{{item}}"
+  with_items:
+    - pveproxy-ssl.pem
+    - pveproxy-ssl.key
+  when: certs.changed
+
+- name: Restart pveproxy
+  become: yes
+  service:
+    name: pveproxy
+    state: restarted
+  when: certs.changed

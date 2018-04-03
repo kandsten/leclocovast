@@ -1,0 +1,44 @@
+---
+- name: Ensure persistent TLS config directory
+  become: yes
+  file:
+    path: "/var/lib/plexmediaserver/cert/"
+    mode: 0700
+    state: directory
+
+- name: Copy certificate chain and key
+  become: yes
+  copy:
+    src: "{{certbot_base}}/config/live/{{inventory_hostname}}/{{item}}"
+    dest: "/var/lib/plexmediaserver/cert/{{item}}"
+    mode: 0700
+  with_items:
+    - cert.pem
+    - chain.pem
+    - fullchain.pem
+    - privkey.pem
+  register: certs
+
+- block:
+    - name: Combine PEM files into PKCS12 bundle
+      become: yes
+      shell: openssl pkcs12 -export -in cert.pem -inkey privkey.pem -out bundle.p12 -certfile chain.pem -passout pass:notreallyapassword
+      args:
+        chdir: "/var/lib/plexmediaserver/cert/"
+
+    - name: Change permissions and owner to plex
+      become: yes
+      file:
+        path: "{{item}}"
+        mode: 0700
+        owner: plex
+      with_items:
+        - /var/lib/plexmediaserver/cert/bundle.p12
+        - /var/lib/plexmediaserver/cert/
+
+    - name: Restart Plex Media Server
+      become: yes
+      service:
+        name: plexmediaserver
+        state: restarted
+  when: certs.changed

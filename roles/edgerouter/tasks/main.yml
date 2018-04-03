@@ -1,0 +1,39 @@
+---
+- name: Ensure persistent TLS config directory
+  file:
+    path: /config/tls
+    mode: 0700
+    state: directory
+
+- name: Copy Certificate chain and key
+  copy:
+    src: "{{certbot_base}}/config/live/{{inventory_hostname}}/{{item}}"
+    dest: /config/tls/
+    mode: 0700
+  with_items:
+    - cert.pem
+    - chain.pem
+    - privkey.pem
+  register: certs
+
+- name: Allocate cert/key PEM file
+  file:
+    path: /config/tls/server.pem
+    mode: 0700
+  when: certs.changed
+
+- name: Merge into combined cert/key PEM
+  shell: cat cert.pem privkey.pem > server.pem
+  args:
+    chdir: /config/tls
+  when: certs.changed
+
+- name: Place configuration script
+  copy:
+    dest: /config/tls/configuration_script
+    src: configuration_script
+    mode: 0700
+
+- name: Run configuration script
+  command: /config/tls/configuration_script
+  when: certs.changed

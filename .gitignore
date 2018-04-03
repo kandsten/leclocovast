@@ -1,0 +1,6 @@
+*.DS_Store
+*.retry
+# My live config, not really of interest
+/inventory.yml
+/cloudflare.ini
+/certbot

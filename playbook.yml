@@ -1,0 +1,45 @@
+---
+- name: Generate certificates
+  hosts: all
+  connection: local
+  run_once: true
+  gather_facts: no
+  roles:
+    - certbot
+
+- name: Cert update for Edgerouter X
+  hosts: edgerouter
+  gather_facts: no
+  become: yes
+  roles:
+    - edgerouter
+
+- name: Cert update for Unifi controller
+  hosts: unifi
+  gather_facts: no
+  roles:
+    - unifi
+
+- name: Cert update for ESXi
+  hosts: esxi
+  gather_facts: no
+  roles:
+    - esxi
+
+- name: Cert update for hass.io
+  hosts: hass.io
+  gather_facts: no
+  roles:
+  - hass.io
+
+- name: Cert update for plex
+  hosts: plex
+  gather_facts: no
+  roles:
+    - plex
+
+- name: Cert update for proxmox
+  hosts: proxmox
+  gather_facts: no
+  roles:
+    - proxmox

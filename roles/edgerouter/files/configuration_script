@@ -1,0 +1,7 @@
+#!/bin/vbash
+source /opt/vyatta/etc/functions/script-template
+
+configure
+set service gui cert-file /config/tls/server.pem
+set service gui ca-file /config/tls/chain.pem
+commit

@@ -1,0 +1,38 @@
+---
+- name: Ensure persistent TLS config directory
+  file:
+    path: "cert-{{inventory_hostname}}"
+    mode: 0700
+    state: directory
+
+- name: Copy certificate chain and key
+  copy:
+    src: "{{certbot_base}}/config/live/{{inventory_hostname}}/{{item}}"
+    dest: "cert-{{inventory_hostname}}"
+    mode: 0700
+  with_items:
+    - cert.pem
+    - chain.pem
+    - fullchain.pem
+    - privkey.pem
+  register: certs
+
+- name: Combine PEM files into PKCS12 bundle
+  shell: openssl pkcs12 -export -in fullchain.pem -inkey privkey.pem -out bundle.p12 -name unifi -CAfile cert.pem -caname root -passout pass:aircontrolenterprise
+  args:
+    chdir: "cert-{{inventory_hostname}}"
+  when: certs.changed
+
+- name: Import PKCS12 into Java key store
+  become: yes
+  shell: keytool -importkeystore -deststorepass aircontrolenterprise -destkeypass aircontrolenterprise -destkeystore /usr/lib/unifi/data/keystore --srckeystore bundle.p12 -srcstoretype PKCS12 -srcstorepass aircontrolenterprise -alias unifi -noprompt
+  args:
+    chdir: "cert-{{inventory_hostname}}"
+  when: certs.changed
+
+- name: Restart UniFi controller
+  become: yes
+  service:
+    name: unifi
+    state: restarted
+  when: certs.changed

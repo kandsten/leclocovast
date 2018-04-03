@@ -1,0 +1,7 @@
+---
+- name: "Registering or renewing hosts"
+  local_action: command certbot certonly --agree-tos --email {{user_email}} -n --dns-cloudflare --dns-cloudflare-credentials cloudflare.ini -d {{item}} --config-dir={{certbot_base}}/config --logs-dir={{certbot_base}}/logs --work-dir={{certbot_base}}/work
+  register: cert_reg
+  changed_when: cert_reg.rc != 0
+  with_items:
+    - "{{ansible_play_hosts}}"

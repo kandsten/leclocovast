@@ -1,0 +1,2 @@
+certbot_base: "{{playbook_dir}}/certbot"
+user_email: <email>

@@ -1,0 +1,17 @@
+[edgerouter]
+edgerouter.host.here ansible_host=10.0.0.1
+
+[hass.io]
+hassio.host.here
+
+[unifi]
+unifi.controller.here
+
+[esxi]
+vmware.esxi.host.here
+
+[plex]
+plex.host.here
+
+[proxmox]
+proxmox.host.here nodename=proxmox

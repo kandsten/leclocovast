@@ -1,0 +1,16 @@
+- name: Copy Certificate chain and key
+  copy:
+    src: "{{certbot_base}}/config/live/{{inventory_hostname}}/{{item.file}}"
+    dest: "/etc/vmware/ssl/{{item.dest}}"
+    mode: 0700
+  with_items:
+    - { file: "fullchain.pem", dest: "rui.crt" }
+    - { file: "privkey.pem", dest: "rui.key" }
+  register: certs
+
+- name: Restart management agents
+  command: /etc/init.d/{{item}} restart
+  with_items:
+    - hostd
+    - vpxa
+  when: certs.changed
